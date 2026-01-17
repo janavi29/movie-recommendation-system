@@ -17,6 +17,7 @@ POSTER_BASE_URL = "https://image.tmdb.org/t/p/w500/"
 # -------------------- FUNCTIONS --------------------
 
 def fetch_poster(movie_id):
+    """Fetch movie poster safely from TMDB"""
     try:
         response = requests.get(
             f"https://api.themoviedb.org/3/movie/{movie_id}",
@@ -34,32 +35,41 @@ def fetch_poster(movie_id):
         return None
 
 
-def recommend(movie, mood):
+def recommend_by_movie(movie):
+    """Recommendation based ONLY on selected movie"""
     movie_index = movies[movies['title'] == movie].index[0]
     distances = list(enumerate(similarity[movie_index]))
 
-    # Base sorting
-    distances = sorted(distances, key=lambda x: x[1], reverse=True)
+    distances = sorted(distances, key=lambda x: x[1], reverse=True)[1:6]
 
-    # Mood-based behavior
-    if mood == "Happy":
-        candidates = distances[1:15]        # stronger similarity
-    elif mood == "Sad":
-        candidates = distances[5:25]        # deeper emotional neighbors
-    else:  # Neutral
-        candidates = distances[1:20]
-
-    random.shuffle(candidates)
-
-    recommended_movies = []
-    recommended_posters = []
-
-    for i in candidates[:5]:
+    names, posters = [], []
+    for i in distances:
         movie_id = movies.iloc[i[0]]['movie_id']
-        recommended_movies.append(movies.iloc[i[0]]['title'])
-        recommended_posters.append(fetch_poster(movie_id))
+        names.append(movies.iloc[i[0]]['title'])
+        posters.append(fetch_poster(movie_id))
 
-    return recommended_movies, recommended_posters
+    return names, posters
+
+
+def recommend_by_mood(mood):
+    """Recommendation based ONLY on mood (independent of selected movie)"""
+    total_movies = len(movies)
+    indices = list(range(total_movies))
+
+    if mood == "Happy":
+        sampled = random.sample(indices, 20)
+    elif mood == "Sad":
+        sampled = random.sample(indices, 20)
+    else:  # Neutral
+        sampled = random.sample(indices, 20)
+
+    names, posters = [], []
+    for idx in sampled[:5]:
+        movie_id = movies.iloc[idx]['movie_id']
+        names.append(movies.iloc[idx]['title'])
+        posters.append(fetch_poster(movie_id))
+
+    return names, posters
 
 
 # -------------------- LOAD DATA --------------------
@@ -92,16 +102,32 @@ with col_mood:
 # -------------------- ACTION --------------------
 
 if st.button("Recommend"):
-    names, posters = recommend(selected_movie, mood)
 
-    st.subheader(f"🎯 Recommendations for mood: **{mood}**")
+    # -------- Selected Movie Based --------
+    st.subheader(f"🎯 Because you selected: **{selected_movie}**")
+    movie_names, movie_posters = recommend_by_movie(selected_movie)
 
     cols = st.columns(5)
     for i in range(5):
         with cols[i]:
-            st.text(names[i])
-            if posters[i]:
-                st.image(posters[i], width="stretch")
+            st.text(movie_names[i])
+            if movie_posters[i]:
+                st.image(movie_posters[i], width="stretch")
+            else:
+                st.warning("Poster not available")
+
+    st.markdown("---")
+
+    # -------- Mood Based --------
+    st.subheader(f"❤️ Because you feel: **{mood}**")
+    mood_names, mood_posters = recommend_by_mood(mood)
+
+    cols = st.columns(5)
+    for i in range(5):
+        with cols[i]:
+            st.text(mood_names[i])
+            if mood_posters[i]:
+                st.image(mood_posters[i], width="stretch")
             else:
                 st.warning("Poster not available")
 
