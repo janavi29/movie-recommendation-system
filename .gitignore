@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+
+# datasets
+*.csv
+
+# ML models
+*.pkl
+*.joblib
+*.h5
