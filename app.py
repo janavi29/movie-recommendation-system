@@ -6,7 +6,7 @@ import random
 
 # -------------------- PAGE CONFIG --------------------
 st.set_page_config(
-    page_title="Mood Based Content Recommendation System",
+    page_title="Movie&Mood Based Content Recommendation System",
     layout="wide"
 )
 
